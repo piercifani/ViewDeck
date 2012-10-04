@@ -345,10 +345,25 @@ __typeof__(h) __h = (h);                                    \
     return II_CGRectShrink(self.referenceBounds, 0, [self relativeStatusBarHeight] + (self.navigationController.navigationBarHidden ? 0 : self.navigationController.navigationBar.frame.size.height));
 }
 
-- (CGRect)sideViewBounds {
-    if (self.navigationControllerBehavior == IIViewDeckNavigationControllerContained)
-        return self.referenceBounds;
+- (CGRect)sideViewBoundsForRightView {
+    if (self.navigationControllerBehavior == IIViewDeckNavigationControllerContained){
+        
+        CGRect outputRect = CGRectMake(self.referenceBounds.origin.x + self.rightLedge,
+                                       self.referenceBounds.origin.y,
+                                       self.referenceBounds.size.width - self.rightLedge,
+                                       self.referenceBounds.size.height);
+        return outputRect;
+    }
     
+    return II_CGRectOffsetTopAndShrink(self.referenceBounds, [self relativeStatusBarHeight]);
+}
+
+
+- (CGRect)sideViewBounds {
+    if (self.navigationControllerBehavior == IIViewDeckNavigationControllerContained){        
+        return self.referenceBounds;
+    }
+      
     return II_CGRectOffsetTopAndShrink(self.referenceBounds, [self relativeStatusBarHeight]);
 }
 
@@ -555,9 +570,9 @@ __typeof__(h) __h = (h);                                    \
         self.centerController.view.frame = self.centerView.bounds;
         self.leftController.view.frame = self.sideViewBounds;
         self.leftController.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        self.rightController.view.frame = self.sideViewBounds;
+        self.rightController.view.frame = [self sideViewBoundsForRightView];
         self.rightController.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        
+
         [self applyShadowToSlidingView];
     };
 
