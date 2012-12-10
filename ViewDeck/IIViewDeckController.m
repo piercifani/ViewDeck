@@ -1082,9 +1082,56 @@ __typeof__(h) __h = (h);                                    \
     
     return YES;
 }
+- (void)rightViewPopViewController
+{
+    UINavigationController *centerNavigation = (UINavigationController *) self.centerController;
+    
+    if ([self.centerController isKindOfClass:[UITabBarController class]]) {
+        UITabBarController * tabBar = (UITabBarController *) self.centerController;
+        if ([[tabBar selectedViewController] isKindOfClass:[UINavigationController class]]) {
+            centerNavigation =  (UINavigationController *) [tabBar selectedViewController];
+        }
+    }
+    
+    NSAssert([centerNavigation isKindOfClass:[UINavigationController class]], @"cannot rightViewPushViewControllerOverCenterView when center controller is not a navigation controller");
+    
+    UIGraphicsBeginImageContextWithOptions(self.view.bounds.size, YES, 0.0);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    [self.view.layer renderInContext:context];
+    UIImage *currentControllerShot = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    UIImageView* shotView = [[UIImageView alloc] initWithImage:currentControllerShot];
+    shotView.frame = self.view.frame;
+    [self.view.superview addSubview:shotView];
+    CGRect targetFrame = self.view.frame;
+    self.view.frame = CGRectOffset(self.view.frame, -self.view.frame.size.width, 0);
+    
+    [self openRightViewAnimated:NO];
+    UINavigationController* navController = centerNavigation;
+    [navController popViewControllerAnimated:NO];
+    
+    [UIView animateWithDuration:0.3 delay:0 options:0 animations:^{
+        shotView.frame = CGRectOffset(shotView.frame, self.view.frame.size.width, 0);
+        self.view.frame = targetFrame;
+    } completion:^(BOOL finished) {
+        [shotView removeFromSuperview];
+    }];
+}
 
 - (void)rightViewPushViewControllerOverCenterController:(UIViewController*)controller {
-    NSAssert([self.centerController isKindOfClass:[UINavigationController class]], @"cannot rightViewPushViewControllerOverCenterView when center controller is not a navigation controller");
+
+    UINavigationController *centerNavigation = (UINavigationController *) self.centerController;
+          if ([self.centerController isKindOfClass:[UITabBarController class]]) {
+   
+           UITabBarController * tabBar = (UITabBarController *) self.centerController;
+                   if ([[tabBar selectedViewController] isKindOfClass:[UINavigationController class]]) {
+                   centerNavigation =  (UINavigationController *) [tabBar selectedViewController];
+               }
+      }
+    NSAssert([centerNavigation isKindOfClass:[UINavigationController class]], @"cannot rightViewPushViewControllerOverCenterView when center controller is not a navigation controller");
+    
 
     UIGraphicsBeginImageContextWithOptions(self.view.bounds.size, YES, 0.0);
 
@@ -1100,7 +1147,7 @@ __typeof__(h) __h = (h);                                    \
     self.view.frame = CGRectOffset(self.view.frame, self.view.frame.size.width, 0);
     
     [self closeRightViewAnimated:NO];
-    UINavigationController* navController = (UINavigationController*)self.centerController;
+    UINavigationController* navController = (UINavigationController*)centerNavigation;
     [navController pushViewController:controller animated:NO];
     
     [UIView animateWithDuration:0.3 delay:0 options:0 animations:^{
@@ -1109,6 +1156,7 @@ __typeof__(h) __h = (h);                                    \
     } completion:^(BOOL finished) {
         [shotView removeFromSuperview];
     }];
+    [self closeRightView];
 }
 
 
@@ -1531,7 +1579,7 @@ __typeof__(h) __h = (h);                                    \
         afterBlock = ^(UIViewController* controller, BOOL left) {
             [controller vdc_viewWillAppear:NO];
             controller.view.hidden = left ? self.slidingControllerView.frame.origin.x <= 0 : self.slidingControllerView.frame.origin.x >= 0;
-            controller.view.frame = self.referenceBounds;
+            controller.view.frame = [self sideViewBoundsForRightView];
             controller.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
             if (self.slidingController)
                 [self.referenceView insertSubview:controller.view belowSubview:self.slidingControllerView];
